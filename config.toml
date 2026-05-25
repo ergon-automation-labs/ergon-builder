@@ -1,0 +1,52 @@
+# Bot Army Builder Configuration
+# Defines base image and build standards for all Bot Army bots
+
+[builder]
+version = "1.0.0"
+description = "Shared base image + build templates for Bot Army bots"
+maintainer = "ergon-automation-labs"
+
+[base_image]
+# Base image: erlang:26-alpine
+erlang_version = "26"
+erlang_variant = "alpine"
+# Installed: bash, ca-certificates, curl, dumb-init, openssl
+
+[registry]
+default = "ergon-automation-labs"
+
+[docker]
+# Image naming convention
+# ergon-automation-labs/ergon-<bot-name>:<channel>
+#
+# Channels:
+# - stable      frozen release (manual tag)
+# - latest      recent stable build
+# - nightly     main branch (cutting edge)
+# - main        same as nightly (git branch)
+#
+# Examples:
+# ergon-automation-labs/ergon-gtd:stable
+# ergon-automation-labs/ergon-llm:v0.6.90
+# ergon-automation-labs/ergon-dispatcher:main
+
+[build]
+# Multi-stage build strategy:
+# Stage 1: Build erlang release (elixir compile + mix release)
+# Stage 2: Runtime from bot-army-builder:base
+#
+# This keeps images small (no build dependencies in runtime)
+
+[runtime]
+# Standard environment variables (bot repos can override)
+MIX_ENV = "prod"
+NATS_SERVERS = "nats://nats:4222"        # Default NATS broker
+DATABASE_URL = "postgres://postgres:postgres@postgres:5432/bot_army_prod"
+
+# Health check standard
+# All bots should respond to: GET http://localhost:8888/health
+# Customize port in Dockerfile.template if different
+
+[entrypoint]
+# Uses dumb-init for proper signal handling
+# Command: dumb-init -- <bot-name> start

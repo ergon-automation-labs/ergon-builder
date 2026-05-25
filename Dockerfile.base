@@ -1,0 +1,27 @@
+# Bot Army Base Image
+# Provides Erlang/OTP runtime + common dependencies for all bots
+# Version: 1.0.0
+# Usage: FROM ergon-automation-labs/bot-army-builder:base
+
+FROM erlang:26-alpine
+
+LABEL maintainer="ergon-automation-labs"
+LABEL description="Bot Army base image (Erlang 26 + common bot runtime)"
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    ca-certificates \
+    curl \
+    dumb-init \
+    openssl \
+    && rm -rf /var/cache/apk/*
+
+# Create app directory
+WORKDIR /app
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+# Default: no command (bot repos override)
+CMD ["/bin/sh"]

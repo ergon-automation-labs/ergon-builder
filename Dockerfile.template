@@ -1,0 +1,53 @@
+# Bot Army Bot Dockerfile Template
+# Copy this to your bot repo and customize as needed
+# Usage: docker build -t ergon-automation-labs/<bot-name>:stable -f Dockerfile .
+
+ARG BUILDER_VERSION=1.0.0
+ARG CHANNEL=stable
+
+# Stage 1: Build (compile Elixir + create OTP release)
+FROM erlang:26-alpine as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache \
+    build-base \
+    git \
+    && rm -rf /var/cache/apk/*
+
+# Copy mix files
+COPY mix.exs mix.lock ./
+
+# Install Elixir + hex/rebar
+RUN apk add --no-cache elixir && \
+    mix local.hex --force && \
+    mix local.rebar --force
+
+# Get dependencies
+RUN mix deps.get --only prod
+
+# Copy source
+COPY . .
+
+# Compile and create release
+RUN mix compile --prod && \
+    mix release
+
+# Stage 2: Runtime (use base image)
+FROM ergon-automation-labs/bot-army-builder:${BUILDER_VERSION}
+
+# Copy release from builder
+COPY --from=builder /app/_build/prod/rel/<BOT_NAME> /app/bin/
+
+# Environment variables (override at runtime)
+ENV MIX_ENV=prod
+ENV NATS_SERVERS=nats://nats:4222
+ENV DATABASE_URL=postgres://postgres:postgres@postgres:5432/bot_army_prod
+
+# Health check (customize port if needed)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8888/health || exit 1
+
+# Start the bot
+CMD ["/app/bin/<BOT_NAME>", "start"]
