@@ -3,7 +3,7 @@
 # Version: 1.0.0
 # Usage: FROM ergon-automation-labs/bot-army-builder:base
 
-FROM erlang:26-alpine
+FROM erlang:27-alpine
 
 LABEL maintainer="ergon-automation-labs"
 LABEL description="Bot Army base image (Erlang 26 + common bot runtime)"
